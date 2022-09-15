@@ -30,9 +30,7 @@ create table product_table
     available     boolean          default true not null,
     created_at   timestamp                     not null,
     updated_at   timestamp,
-    published_at timestamp,
-    starts_at    timestamp,
-    ends_at     timestamp,
+
     content_      text
 );
 
@@ -53,15 +51,12 @@ create table user_table
     email          varchar(50) default NULL:: character varying,
     password_hash varchar(32)               not null,
     admin          boolean     default false not null,
-    vendor         boolean     default false not null,
     registered_at timestamp                 not null,
     last_login   timestamp,
-    vendor_intro  text,
     profile        text
 );
 
-comment
-    on column user_table."vendor_intro" is 'Kratki uvod za prodavca';
+
 
 alter table user_table
     owner to postgres;
@@ -101,28 +96,14 @@ create table category_table
     title      varchar(75) not null,
     content_   text   default null
 );
-create table product_category_table
-(
-    product_id bigint not null
-        constraint product_category_table_pk
-            primary key,
-    category_id bigint not null
-);
-create table tag_table
-(
-    id       bigserial   not null
-        constraint tag_table_pk
-            primary key,
-    title    varchar(75) not null,
-    content_ text default null
-);
-create table product_tag_table
-(
-    product_id  bigint not null
-        constraint product_tag_table_pk
-            primary key,
-    category_id bigint not null
-);
+    create table product_category_table
+        (
+        product_id    int REFERENCES product_table (id) ON UPDATE CASCADE ON DELETE CASCADE
+        , category_id int REFERENCES category_table (id) ON UPDATE CASCADE
+        , CONSTRAINT category_product_pkey PRIMARY KEY (category_id, product_id)  -- explicit pk
+        );
+
+
 create table cart_table
 (
     id          bigserial              not null
@@ -131,7 +112,7 @@ create table cart_table
     user_id   bigint       default null
         constraint cart_table_user_fk
             references user_table,
-    session_id varchar(100)           not null,
+
     token       varchar(100)           not null,
     status      smallint     default 0 not null check (status between 0 and 5),
     name_       varchar(50)  default null,
@@ -189,7 +170,7 @@ create table order_table
     user_id       bigint       default null
         constraint order_table_user_fk
             references user_table,
-    session_id   varchar(100)           not null,
+
     token          varchar(100)           not null,
     status         smallint     default 0 not null check (status between 0 and 5),
     sub_total    float                  not null,
@@ -236,7 +217,6 @@ create table order_item_table
     order_id  bigint              not null
         constraint order_item_table_order_fk
             references order_table,
-    sku         varchar(100)        not null,
     price       float     default 0 not null,
     discount    float     default 0 not null,
     quantity    smallint  default 0 not null,
@@ -332,15 +312,12 @@ alter table product_category_table
 alter table product_category_table
     add constraint product_category_table_product_fk
         foreign key (product_id) references product_table;
-alter table product_tag_table
-    rename column category_id to tag_id;
 
-alter table product_tag_table
-    add constraint product_tag_table_product_fk
-        foreign key (product_id) references product_table;
+alter table product_table
+    add category_id int;
 
-alter table product_tag_table
-    add constraint product_tag_table_tag_fk
-        foreign key (tag_id) references tag_table;
+alter table product_table
+    add constraint product_category_fk
+        foreign key (category_id) references category_table;
 
 CREATE SEQUENCE hibernate_sequence START 1;
